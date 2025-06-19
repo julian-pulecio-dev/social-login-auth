@@ -7,6 +7,7 @@ client = boto3.client('cognito-idp', region_name='us-east-1')
 
 def lambda_handler(event, context):
     # Get authorization code from frontend
+    print(event)
     if event["httpMethod"] == "OPTIONS":
         return {
             "statusCode": 204,

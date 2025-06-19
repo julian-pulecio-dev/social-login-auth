@@ -11,7 +11,7 @@ type UserContextType = {
   user: UserProfile | null;
   token: string | null;
   error: string | null;
-  callbackSocialLoginUser: (code: string, provider: string) => void;
+  callbackSocialLoginUser: (code: string, provider: string) => Promise<boolean>;
   callProtectedRoute: () => any;
   logoutUser: () => void;
   isLoggedIn: () => boolean;
@@ -58,6 +58,7 @@ export const UserProvider = ({ children }: Props) => {
       localStorage.setItem("token", res?.data.idToken);
       setToken(res?.data.idToken!);
       setUser(userObj!);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${res?.data.idToken!}`;
       return true
     }
     return false;
@@ -65,7 +66,7 @@ export const UserProvider = ({ children }: Props) => {
 
   const callProtectedRoute = async () => {
     const res = await callProtectedRouteApi();
-    if (res?.status == 200) {
+    if (res?.status == 200 || res?.status == 204) {
       console.log("Protected route accessed successfully");
       return res;
     } else if (res?.status == 401) {

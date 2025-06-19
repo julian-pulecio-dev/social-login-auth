@@ -5,7 +5,5 @@ const api = "https://7nwi2gdpjd.execute-api.us-east-1.amazonaws.com/dev/";
 
 export const callProtectedRouteApi = async () => {
     const response: AxiosResponse = await axios.post(api + "protected");
-    console.log(response.data);
-    console.log(response)
-    return response.data;
+    return response;
 };
