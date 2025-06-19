@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-social-login-auth
+  Sample SAM Template for sam-social-login-auth
+
+Parameters:
+  CallbackURL:
+    Type: String
+    Description: The callback URL for the Cognito User Pool Client.
+
+  LogoutURL:
+    Type: String
+    Description: The logout URL for the Cognito User Pool Client.
+
+Resources:
+  Cognito:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: templates/cognito.yaml
+      Parameters:
+        CallbackURL: !Ref CallbackURL
+        LogoutURL: !Ref LogoutURL
+
+  Lambdas:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: templates/lambdas.yaml
+      Parameters:
+        SocialAuthUserPoolId: !GetAtt Cognito.Outputs.SocialAuthUserPoolId
+        SocialAuthUserPoolARN: !GetAtt Cognito.Outputs.SocialAuthUserPoolARN
+        SocialAuthUserPoolClientId: !GetAtt Cognito.Outputs.SocialAuthUserPoolClientId
+        SocialAuthDomain: !GetAtt Cognito.Outputs.SocialAuthDomain
+        CallbackURL: !Ref CallbackURL

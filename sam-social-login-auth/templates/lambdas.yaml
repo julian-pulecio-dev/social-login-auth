@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-social-login-auth
+  Sample SAM Template for sam-social-login-auth
+
+Parameters:
+  SocialAuthUserPoolId:
+    Type: String
+    Description: The ID of the Cognito User Pool.
+  SocialAuthUserPoolARN:
+    Type: String
+    Description: The ARN of the Cognito User Pool.
+  SocialAuthUserPoolClientId:
+    Type: String
+    Description: The ID of the Cognito User Pool Client.
+  SocialAuthDomain:
+    Type: String
+    Description: The domain name for the Cognito User Pool.
+  CallbackURL:
+    Type: String
+    Description: The callback URL for the Cognito User Pool Client.
+
+Globals:
+  Function:
+    Timeout: 3
+    CodeUri: ../src/
+
+Resources:
+  SocialAuthApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      EndpointConfiguration: REGIONAL
+      Cors:
+        AllowMethods: "'OPTIONS,GET,POST'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+        MaxAge: 3000
+      Auth:
+        DefaultAuthorizer: SocialAuthCognitoAuthorizer
+        Authorizers:
+          SocialAuthCognitoAuthorizer:
+            UserPoolArn: !Ref SocialAuthUserPoolARN
+            AuthorizerResultTtlInSeconds: 0
+            Identity:
+              Header: Authorization
+              ReauthorizeEvery: 0
+
+  SocialAuthCallbackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambdas.social_auth_callback.lambda_handler
+      Runtime: python3.12
+      Environment:
+        Variables:
+          SOCIAL_AUTH_USER_POOL_CLIENT_ID: !Ref SocialAuthUserPoolClientId
+          SOCIAL_AUTH_USER_POOL_DOMAIN: !Ref SocialAuthDomain
+          CALLBACK_URL: !Ref CallbackURL
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        Preflight:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SocialAuthApi
+            Path: /social_auth_callback
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SocialAuthApi
+            Path: /social_auth_callback
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+  SocialAuthProtectedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambdas.protected.lambda_handler
+      Runtime: python3.12
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        Preflight:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SocialAuthApi
+            Path: /protected
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SocialAuthApi
+            Path: /protected
+            Method: POST

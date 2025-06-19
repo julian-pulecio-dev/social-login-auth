@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-social-login-auth
+  Sample SAM Template for sam-social-login-auth
+
+Parameters:
+  CallbackURL:
+    Type: String
+    Description: The callback URL for the Cognito User Pool Client.
+
+  LogoutURL:
+    Type: String
+    Description: The logout URL for the Cognito User Pool Client.
+
+Resources:
+  SocialAuthUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: SocialAuthUserPool
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AutoVerifiedAttributes:
+        - email
+
+  SocialAuthGoogleIdentityProvider:
+    DependsOn: SocialAuthUserPool
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Properties:
+      UserPoolId: !Ref SocialAuthUserPool
+      ProviderName: Google
+      ProviderType: Google
+      ProviderDetails:
+        client_id: '{{resolve:secretsmanager:google_api_credentials:SecretString:client_id}}'
+        client_secret: '{{resolve:secretsmanager:google_api_credentials:SecretString:client_secret}}'
+        authorize_scopes: "profile email openid"
+      AttributeMapping:
+        email: email
+        name: name
+  
+  SocialAuthUserPoolClient:
+    DependsOn: SocialAuthGoogleIdentityProvider
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref SocialAuthUserPool
+      ClientName: SocialAuthUserPoolClient
+      GenerateSecret: false
+      AllowedOAuthFlows: 
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - !Ref CallbackURL
+      LogoutURLs:
+        - !Ref LogoutURL
+      SupportedIdentityProviders:
+        - Google
+      EnableTokenRevocation: true
+      RefreshTokenValidity: 30
+      ReadAttributes:
+        - email
+        - name
+      WriteAttributes:
+        - email
+        - name
+    
+  SocialAuthUserPoolDomain:
+    DependsOn: SocialAuthUserPool
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: social-auth-domain
+      UserPoolId: !Ref SocialAuthUserPool
+
+Outputs:
+  SocialAuthUserPoolId:
+    Description: The ID of the Cognito User Pool.
+    Value: !Ref SocialAuthUserPool
+
+  SocialAuthUserPoolARN:
+    Description: The ARN of the Cognito User Pool.
+    Value: !GetAtt SocialAuthUserPool.Arn
+    
+  SocialAuthUserPoolClientId:
+    Description: The ID of the Cognito User Pool Client.
+    Value: !Ref SocialAuthUserPoolClient
+
+  SocialAuthDomain:
+    Description: The domain of the Cognito User Pool.
+    Value: !Sub "${SocialAuthUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
