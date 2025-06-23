@@ -1,6 +1,6 @@
 export const cognitoUserPool = {
-  UserPoolId: 'us-east-1_fnFSJXyMw',
-  ClientId: '5apencfu1r2mqtqhc0pnklpt27',
+  UserPoolId: 'us-east-1_EZVksd2kZ',
+  ClientId: '1mp9un14erfvhivhik65p3infg',
   Region: 'us-east-1', // e.g., 'us-east-1'
   IdentityPoolId: 'your-identity-pool-id', // only needed if using AWS services
   Domain: 'https://social-auth-domain.auth.us-east-1.amazoncognito.com',
